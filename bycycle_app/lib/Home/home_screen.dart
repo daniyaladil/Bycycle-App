@@ -11,12 +11,9 @@ class TiltedContainer extends StatelessWidget {
     return ClipPath(
       clipper: TiltedClipper(),
       child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xff353F54), Color(0xff222834)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08), // 👈 slight transparent
+          borderRadius: BorderRadius.circular(12),
         ),
         child: child,
       ),
@@ -57,12 +54,12 @@ class _RotatableImageState extends State<RotatableImage> {
     return GestureDetector(
       onPanUpdate: (details) {
         setState(() {
-          _rotation += details.delta.dx * 0.01; // drag left/right to rotate
+          _rotation += details.delta.dx * 0.005; // smoother rotation
         });
       },
       child: InteractiveViewer(
-        minScale: 0.8, // how much you can zoom out
-        maxScale: 3.0, // how much you can zoom in
+        minScale: 0.8,
+        maxScale: 3.0,
         child: Transform.rotate(
           angle: _rotation,
           child: Image.asset(
@@ -76,7 +73,6 @@ class _RotatableImageState extends State<RotatableImage> {
   }
 }
 
-
 // Home screen
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -89,9 +85,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xff252D3C),
+      backgroundColor: const Color(0xff252D3C), // 👈 darker base color
       appBar: AppBar(
         backgroundColor: const Color(0xff252D3C).withOpacity(.9),
+        elevation: 0,
         title: const Text(
           "Choose Your Bike",
           style: TextStyle(
@@ -101,35 +98,65 @@ class _HomeScreenState extends State<HomeScreen> {
           BluishButtonComponent(Icon: Icons.search),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Container(
-            margin: const EdgeInsets.all(16),
-            child: TiltedContainer(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Center(
-                      child: RotatableImage(), // 👈 Now your image is rotatable
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "30 % OFF",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  ],
-                ),
+          // 👇 Blue diagonal overlay
+          Positioned.fill(
+            child: ClipPath(
+              clipper: DiagonalClipper(),
+              child: Container(
+                color: Colors.blue.withOpacity(0.6),
               ),
             ),
+          ),
+
+          // 👇 Content above background
+          Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.all(16),
+                child: TiltedContainer(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Center(child: RotatableImage()),
+                        SizedBox(height: 12),
+                        Text(
+                          "30 % OFF",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+}
+
+// 👇 Custom clipper for half-diagonal blue overlay
+class DiagonalClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    Path path = Path();
+    path.moveTo(0, 0); // top-left
+    path.lineTo(size.width, 0); // top-right
+    path.lineTo(size.width, size.height); // bottom-right
+    path.lineTo(0, size.height * 0.5); // diagonal cut
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
